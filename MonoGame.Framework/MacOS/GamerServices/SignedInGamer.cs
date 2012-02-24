@@ -298,17 +298,19 @@ namespace Microsoft.Xna.Framework.GamerServices
 
 	public class SignedInEventArgs : EventArgs
 	{
+		public SignedInGamer Gamer { get; private set; }
 		public SignedInEventArgs (SignedInGamer gamer)
 		{
-
+			Gamer = gamer;
 		}
 	}
 
 	public class SignedOutEventArgs : EventArgs
 	{
+		public SignedInGamer Gamer { get; private set; }
 		public SignedOutEventArgs (SignedInGamer gamer)
 		{
-
+			Gamer = gamer;
 		}
 	}
 }

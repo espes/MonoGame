@@ -8,7 +8,7 @@ namespace Microsoft.Xna.Framework.Graphics
         public EffectPassCollection Passes { get; set; }
 		public EffectAnnotationCollection Annotations { get; set; }
 
-        public EffectTechnique(Effect effect, DXEffectObject.d3dx_technique technique)
+        internal EffectTechnique(Effect effect, DXEffectObject.d3dx_technique technique)
         {
             Passes = new EffectPassCollection(this);
 			Annotations = new EffectAnnotationCollection();

@@ -114,38 +114,9 @@ namespace Microsoft.Xna.Framework.Graphics
 					//interpret data
 					switch (paramClass) {
 					case EffectParameterClass.Scalar:
-						switch (paramType) {
-						case EffectParameterType.Bool:
-							data = BitConverter.ToBoolean((byte[])parameter.data, 0);
-							break;
-						case EffectParameterType.Int32:
-							data = BitConverter.ToInt32 ((byte[])parameter.data, 0);
-							break;
-						case EffectParameterType.Single:
-							data = BitConverter.ToSingle((byte[])parameter.data, 0);
-							break;
-						case EffectParameterType.Void:
-							data = null;
-							break;
-						default:
-							break;
-							//throw new NotSupportedException();
-						}
-						break;
 					case EffectParameterClass.Vector:
 					case EffectParameterClass.Matrix:
-						switch (paramType) {
-						case EffectParameterType.Single:
-							float[] vals = new float[rowCount*colCount];
-							//transpose maybe?
-							for (int i=0; i<rowCount*colCount; i++) {
-								vals[i] = BitConverter.ToSingle ((byte[])parameter.data, i*4);
-							}
-							data = vals;
-							break;
-						default:
-							break;
-						}
+						data = parameter.data;
 						break;
 					default:
 						//throw new NotSupportedException();

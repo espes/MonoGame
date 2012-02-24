@@ -154,6 +154,11 @@ namespace Microsoft.Xna.Framework
 
 		public void ApplyChanges ()
 		{
+			if (_graphicsDevice == null) {
+				//Should only be null inside game ctor,
+				//So do nothing because we call this inside Run
+				return;
+			}
 			PresentationParameters parms = _graphicsDevice.PresentationParameters;
 			parms.IsFullScreen = wantFullScreen;
 			_graphicsDevice.PresentationParameters = parms;

@@ -395,6 +395,11 @@
     <Compile Include="Content\ContentReaders\AlphaTestEffectReader.cs" />
     <Compile Include="Graphics\Texture2D.cs" />
     <Compile Include="Graphics\SpriteFont.cs" />
+    <Compile Include="Content\EndianBinaryReader.cs" />
+    <Compile Include="Content\BigEndianBitConverter.cs" />
+    <Compile Include="Content\EndianBitConverter.cs" />
+    <Compile Include="Content\Endianness.cs" />
+    <Compile Include="Content\LittleEndianBitConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="MacOS\" />

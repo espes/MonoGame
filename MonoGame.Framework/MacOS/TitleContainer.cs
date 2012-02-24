@@ -56,7 +56,8 @@ namespace Microsoft.Xna.Framework
 		{
 			// Replace Windows path separators with local path separators
 			name = name.Replace('\\', Path.DirectorySeparatorChar);
-			string fileName = Path.Combine(NSBundle.MainBundle.ResourcePath, name);
+			//string fileName = Path.Combine(NSBundle.MainBundle.ResourcePath, name);
+			string fileName = name;
 			return fileName;
 		}
 	}

@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
+using Microsoft.Xna.Framework.Content;
+
 namespace Microsoft.Xna.Framework.Graphics
 {
-	public class DXEffectObject
+	internal class DXEffectObject
 	{
 
 		public enum D3DRENDERSTATETYPE {
@@ -540,31 +542,41 @@ namespace Microsoft.Xna.Framework.Graphics
 
 
 		private MemoryStream effectStream;
-		private BinaryReader effectReader;
+		private EndianBinaryReader effectReader;
 		
 		public d3dx_parameter[] parameter_handles;
 		public d3dx_technique[] technique_handles;
 
 		public d3dx_parameter[] objects;
+		
+		Endianness endianness;
+		EndianBitConverter bitConverter;
 
 		public DXEffectObject(byte[] effectCode)
 		{
 			uint baseOffset = 8;
 			uint tag = BitConverter.ToUInt32(effectCode, 0);
+			endianness = Endianness.LittleEndian;
+			bitConverter = EndianBitConverter.Little;
 			if (tag == 0xBCF00BCF) {
 				//handling this extra stuff should really be in the Effect class
-				baseOffset += BitConverter.ToUInt32(effectCode, 4);
+				baseOffset += bitConverter.ToUInt32(effectCode, 4);
+			} else if (tag == 0xCF0BF0BC) { //same as above, but on xbox (big endian)
+				endianness = Endianness.LittleEndian;
+				bitConverter = EndianBitConverter.Big;
+				
+				baseOffset += bitConverter.ToUInt32(effectCode, 4);
 			} else if (tag != 0xFEFF0901) {
 				//effect too old or too new, or ascii which we can't compile atm
 				throw new NotImplementedException();
 			}
 
 
-			uint startoffset = BitConverter.ToUInt32(effectCode, (int)(baseOffset-4));
+			uint startoffset = bitConverter.ToUInt32(effectCode, (int)(baseOffset-4));
 
 			effectStream = new MemoryStream(effectCode,
 				(int)baseOffset, (int)(effectCode.Length-baseOffset));
-			effectReader = new BinaryReader(effectStream);
+			effectReader = new EndianBinaryReader(bitConverter, effectStream);
 
 			effectStream.Seek(startoffset, SeekOrigin.Current);
 			
@@ -878,13 +890,42 @@ namespace Microsoft.Xna.Framework.Graphics
 					curOffset += param.member_handles[i].bytes;
 				}
 			} else {
-				switch (param.class_)
-				{
+				switch (param.class_) {
 				case D3DXPARAMETER_CLASS.SCALAR:
+					switch (param.type) {
+					case D3DXPARAMETER_TYPE.BOOL:
+						param.data = bitConverter.ToBoolean(data, 0);
+						break;
+					case D3DXPARAMETER_TYPE.INT:
+						param.data = bitConverter.ToInt32 (data, 0);
+						break;
+					case D3DXPARAMETER_TYPE.FLOAT:
+						param.data = bitConverter.ToSingle(data, 0);
+						break;
+					case D3DXPARAMETER_TYPE.VOID:
+						param.data = null;
+						break;
+					default:
+						break;
+						//throw new NotSupportedException();
+					}
+					break;
 				case D3DXPARAMETER_CLASS.VECTOR:
 				case D3DXPARAMETER_CLASS.MATRIX_ROWS:
 				case D3DXPARAMETER_CLASS.MATRIX_COLUMNS:
-					param.data = data;
+					switch (param.type) {
+					case D3DXPARAMETER_TYPE.FLOAT:
+						float[] vals = new float[param.rows*param.columns];
+						//transpose maybe?
+						for (int i=0; i<param.rows*param.columns; i++) {
+							vals[i] = bitConverter.ToSingle (data, i*4);
+						}
+						param.data = vals;
+						break;
+					default:
+						break;
+					}
+					//param.data = data;
 					break;
 				
 				case D3DXPARAMETER_CLASS.STRUCT:
@@ -998,13 +1039,14 @@ namespace Microsoft.Xna.Framework.Graphics
 				case (uint)D3DRENDERSTATETYPE.STENCILENABLE:
 				case (uint)D3DRENDERSTATETYPE.ALPHABLENDENABLE:
 				case (uint)D3DRENDERSTATETYPE.SCISSORTESTENABLE:
-					ret.parameter.data = BitConverter.ToInt32 ((byte[])ret.parameter.data, 0) != 0;
+					ret.parameter.data = bitConverter.ToInt32 ((byte[])ret.parameter.data, 0) != 0;
 					break;
 				case (uint)D3DRENDERSTATETYPE.COLORWRITEENABLE:
-					ret.parameter.data = (ColorWriteChannels)BitConverter.ToInt32 ((byte[])ret.parameter.data, 0);
+				case (uint)D3DRENDERSTATETYPE.COLORWRITEENABLE1:
+					ret.parameter.data = (ColorWriteChannels)bitConverter.ToInt32 ((byte[])ret.parameter.data, 0);
 					break;
 				case (uint)D3DRENDERSTATETYPE.BLENDOP:
-					switch (BitConverter.ToInt32((byte[])ret.parameter.data, 0)) {
+					switch (bitConverter.ToInt32((byte[])ret.parameter.data, 0)) {
 					case 1: ret.parameter.data = BlendFunction.Add; break;
 					case 2: ret.parameter.data = BlendFunction.Subtract; break;
 					case 3: ret.parameter.data = BlendFunction.ReverseSubtract; break;
@@ -1016,7 +1058,7 @@ namespace Microsoft.Xna.Framework.Graphics
 					break;
 				case (uint)D3DRENDERSTATETYPE.SRCBLEND:
 				case (uint)D3DRENDERSTATETYPE.DESTBLEND:
-					switch (BitConverter.ToInt32((byte[])ret.parameter.data, 0)) {
+					switch (bitConverter.ToInt32((byte[])ret.parameter.data, 0)) {
 					case 1: ret.parameter.data = Blend.Zero; break;
 					case 2: ret.parameter.data = Blend.One; break;
 					case 3: ret.parameter.data = Blend.SourceColor; break;
@@ -1035,7 +1077,7 @@ namespace Microsoft.Xna.Framework.Graphics
 					}
 					break;
 				case (uint)D3DRENDERSTATETYPE.CULLMODE:
-					switch (BitConverter.ToInt32 ((byte[])ret.parameter.data, 0)) {
+					switch (bitConverter.ToInt32 ((byte[])ret.parameter.data, 0)) {
 					case 1: ret.parameter.data = CullMode.None; break;
 					case 2: ret.parameter.data = CullMode.CullClockwiseFace; break;
 					case 3: ret.parameter.data = CullMode.CullCounterClockwiseFace; break;
@@ -1044,7 +1086,7 @@ namespace Microsoft.Xna.Framework.Graphics
 					}
 					break;
 				case (uint)D3DRENDERSTATETYPE.STENCILFUNC:
-					switch (BitConverter.ToInt32 ((byte[])ret.parameter.data, 0)) {
+					switch (bitConverter.ToInt32 ((byte[])ret.parameter.data, 0)) {
 					case 1: ret.parameter.data = CompareFunction.Never; break;
 					case 2: ret.parameter.data = CompareFunction.Less; break;
 					case 3: ret.parameter.data = CompareFunction.Equal; break;
@@ -1059,7 +1101,7 @@ namespace Microsoft.Xna.Framework.Graphics
 					break;
 				case (uint)D3DRENDERSTATETYPE.STENCILFAIL:
 				case (uint)D3DRENDERSTATETYPE.STENCILPASS:
-					switch (BitConverter.ToInt32 ((byte[])ret.parameter.data, 0)) {
+					switch (bitConverter.ToInt32 ((byte[])ret.parameter.data, 0)) {
 					case 1: ret.parameter.data = StencilOperation.Keep; break;
 					case 2: ret.parameter.data = StencilOperation.Zero; break;
 					case 3: ret.parameter.data = StencilOperation.Replace; break;
@@ -1073,7 +1115,7 @@ namespace Microsoft.Xna.Framework.Graphics
 					}
 					break;
 				case (uint)D3DRENDERSTATETYPE.STENCILREF:
-					ret.parameter.data = BitConverter.ToInt32 ((byte[])ret.parameter.data, 0);
+					ret.parameter.data = bitConverter.ToInt32 ((byte[])ret.parameter.data, 0);
 					break;
 				default:
 					throw new NotImplementedException();

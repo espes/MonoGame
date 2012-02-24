@@ -61,7 +61,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		bool passthroughVertexShaderAttached = false;
 		
-		public EffectPass(EffectTechnique technique, DXEffectObject.d3dx_pass pass)
+		internal EffectPass(EffectTechnique technique, DXEffectObject.d3dx_pass pass)
         {
             _technique = technique;
 			_graphicsDevice = _technique._effect.GraphicsDevice;
@@ -138,6 +138,10 @@ namespace Microsoft.Xna.Framework.Graphics
 						break;
 					case (uint)DXEffectObject.D3DRENDERSTATETYPE.COLORWRITEENABLE:
 						blendState.ColorWriteChannels = (ColorWriteChannels)state.parameter.data;
+						setBlendState = true;
+						break;
+					case (uint)DXEffectObject.D3DRENDERSTATETYPE.COLORWRITEENABLE1:
+						blendState.ColorWriteChannels1 = (ColorWriteChannels)state.parameter.data;
 						setBlendState = true;
 						break;
 					case (uint)DXEffectObject.D3DRENDERSTATETYPE.STENCILFUNC:
