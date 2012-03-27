@@ -541,7 +541,11 @@ namespace Microsoft.Xna.Framework.Graphics
 			{
 			case SurfaceFormat.Color:
 				glInternalFormat = PixelInternalFormat.Rgba;
-				glFormat = PixelFormat.Rgba;
+///qqq - if xbox
+				glFormat = PixelFormat.AbgrExt;
+//else
+//				glFormat = PixelFormat.Rgba;
+//endif
 				glType = PixelType.UnsignedByte;
 				break;
 			case SurfaceFormat.Bgr565:

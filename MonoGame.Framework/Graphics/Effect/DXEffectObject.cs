@@ -1024,7 +1024,11 @@ namespace Microsoft.Xna.Framework.Graphics
 			ret.parameter = new d3dx_parameter();
 
 			ret.type = STATE_TYPE.CONSTANT;
-			ret.operation = state_table[effectReader.ReadUInt32 ()];
+			uint opIndex = effectReader.ReadUInt32 ();
+			//if (opIndex == 0x5d) { //colorwriteenable1
+			//	opIndex = 0x92; //vertex shader - qqq tmp xbox hax
+			//}
+			ret.operation = state_table[opIndex];
 			ret.index = effectReader.ReadUInt32 ();
 			
 			long typedefOffset = effectReader.ReadInt32 ();

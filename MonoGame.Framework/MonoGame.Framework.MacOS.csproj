@@ -258,7 +258,7 @@
     <Compile Include="Graphics\PackedVector\HalfVector2.cs" />
     <Compile Include="Graphics\PackedVector\NormalizedShort2.cs" />
     <Compile Include="Graphics\PackedVector\NormalizedShort4.cs" />
-    <Compile Include="Graphics\PresentationParameters.cs" />	
+    <Compile Include="Graphics\PresentationParameters.cs" />
     <Compile Include="Graphics\SamplerStateCollection.cs" />
     <Compile Include="Content\ContentSerializerAttribute.cs" />
     <Compile Include="Content\ContentSerializerIgnoreAttribute.cs" />
@@ -354,7 +354,6 @@
     <Compile Include="Graphics\Effect\AlphaTestEffect.cs" />
     <Compile Include="Graphics\Effect\GLSLOptimizer.cs" />
     <Compile Include="Graphics\GraphicsAdapter.cs" />
-    <Compile Include="Graphics\PresentationParameters.cs" />
     <Compile Include="Graphics\SpriteBatcher.cs" />
     <Compile Include="Content\ContentReaders\Texture2DReader.cs" />
     <Compile Include="Graphics\SpriteBatch.cs" />
