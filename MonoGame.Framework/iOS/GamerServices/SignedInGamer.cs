@@ -99,7 +99,9 @@ namespace Microsoft.Xna.Framework.GamerServices
 												{
 													if ( error != null )
 													{
+#if DEBUG									
 														Console.WriteLine(error);
+#endif
 													}
 													else
 													{
@@ -117,7 +119,9 @@ namespace Microsoft.Xna.Framework.GamerServices
 			}
 			catch (Exception ex) 
 			{
+#if DEBUG				
 				Console.WriteLine(ex.Message);
+#endif
 			}
 		}
 		
@@ -266,7 +270,12 @@ namespace Microsoft.Xna.Framework.GamerServices
 		}
 		
 		delegate void AwardAchievementDelegate(string achievementId, double percentageComplete);
-		
+
+        public IAsyncResult BeginAwardAchievement(string achievementId, AsyncCallback callback, Object state)
+        {
+            return BeginAwardAchievement(achievementId, 100.0, callback, state);
+        }
+
 		public IAsyncResult BeginAwardAchievement(
          string achievementId,
 		 double percentageComplete,

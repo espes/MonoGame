@@ -5,7 +5,7 @@ using System.Text;
 
 #if MONOMAC
 using MonoMac.OpenGL;
-#elif WINDOWS
+#elif WINDOWS || LINUX
 using OpenTK.Graphics.OpenGL;
 #else
 
@@ -29,7 +29,7 @@ using BlendEquationMode = OpenTK.Graphics.ES11.All;
  #else
 using OpenTK.Graphics.ES20;
 
-  #if IPHONE
+  #if IPHONE || ANDROID
 using EnableCap = OpenTK.Graphics.ES20.All;
 using FrontFaceDirection = OpenTK.Graphics.ES20.All;
 using BlendEquationMode = OpenTK.Graphics.ES20.All;
@@ -62,7 +62,7 @@ namespace Microsoft.Xna.Framework.Graphics
 		
 #if ES11
         public static void TextureCoordArray(bool enable)
-        {			
+        {						
             if (enable && (_textureCoordArray != GLStateEnabled.True))
                 GL.EnableClientState(ArrayCap.TextureCoordArray);
             else
@@ -181,9 +181,9 @@ namespace Microsoft.Xna.Framework.Graphics
 			GL.Enable (EnableCap.Blend);
 		}
 
-		public static void FillMode (RasterizerState state)
-		{
-#if MONOMAC
+        public static void FillMode(RasterizerState state)
+        {
+#if MONOMAC || WINDOWS || LINUX
 			switch (state.FillMode) {
 			case Microsoft.Xna.Framework.Graphics.FillMode.Solid:
 				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
@@ -193,11 +193,13 @@ namespace Microsoft.Xna.Framework.Graphics
 				break;
 			}
 #else
-			if (state.FillMode != Microsoft.Xna.Framework.Graphics.FillMode.Solid) {
-				throw new NotImplementedException();
-			}
+            if (state.FillMode != Microsoft.Xna.Framework.Graphics.FillMode.Solid)
+            {
+                throw new NotImplementedException();
+            }
 #endif
-		}
+        }
+
 
 		public static void Cull(RasterizerState state, bool offscreen)
 		{

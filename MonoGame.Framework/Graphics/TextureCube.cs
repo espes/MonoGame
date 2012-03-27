@@ -7,7 +7,7 @@ using MonoMac.OpenGL;
 using OpenTK.Graphics.OpenGL;
 #else
 using OpenTK.Graphics.ES20;
- #if IPHONE
+ #if IPHONE || ANDROID
 using PixelInternalFormat = OpenTK.Graphics.ES20.All;
 using PixelFormat = OpenTK.Graphics.ES20.All;
 using PixelType = OpenTK.Graphics.ES20.All;
@@ -22,6 +22,14 @@ namespace Microsoft.Xna.Framework.Graphics
 	public class TextureCube : Texture
 	{
 		protected int size;
+
+        public int Size
+        {
+            get
+            {
+                return size;
+            }
+        }
 		
 		PixelInternalFormat glInternalFormat;
 		PixelFormat glFormat;
@@ -35,7 +43,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 			this.glTarget = TextureTarget.TextureCubeMap;
 
-#if IPHONE
+#if IPHONE || ANDROID
 			GL.GenTextures(1, ref this.glTexture);
 #else
 			GL.GenTextures(1, out this.glTexture);
@@ -59,7 +67,7 @@ namespace Microsoft.Xna.Framework.Graphics
 				if (glFormat == (PixelFormat)All.CompressedTextureFormats) {
 					throw new NotImplementedException();
 				} else {
-#if IPHONE
+#if IPHONE || ANDROID
 					GL.TexImage2D (target, 0, (int)glInternalFormat, size, size, 0, glFormat, glType, IntPtr.Zero);
 #else
 					GL.TexImage2D (target, 0, glInternalFormat, size, size, 0, glFormat, glType, IntPtr.Zero);
@@ -69,7 +77,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			
 			if (mipMap)
 			{
-#if IPHONE
+#if IPHONE || ANDROID
 				GL.GenerateMipmap(TextureTarget.TextureCubeMap);
 #else
 				GL.TexParameter(TextureTarget.TextureCubeMap, TextureParameterName.GenerateMipmap, (int)All.True);
@@ -84,6 +92,27 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 			
 		}
+
+        /// <summary>
+        /// Gets a copy of cube texture data specifying a cubemap face.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="cubeMapFace">The cube map face.</param>
+        /// <param name="data">The data.</param>
+        public void GetData<T>(CubeMapFace cubeMapFace, T[] data) where T : struct
+        {
+            //FIXME Does not compile on Android or iOS
+/*
+            TextureTarget target = GetGLCubeFace(cubeMapFace);
+            GL.BindTexture(target, this.glTexture);
+            // 4 bytes per pixel
+            if (data.Length < size * size * 4)
+                throw new ArgumentException("data");
+
+            GL.GetTexImage<T>(target, 0, PixelFormat.Bgra,
+                PixelType.UnsignedByte, data);
+ */
+        }
 		
 		public void SetData<T>(CubeMapFace face, int level, Rectangle? rect,
 		                       T[] data, int startIndex, int elementCount) where T : struct

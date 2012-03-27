@@ -84,12 +84,10 @@ namespace Microsoft.Xna.Framework
             return new iOSGamePlatform(game);
 #elif MONOMAC
             return new MacGamePlatform(game);
-#elif WINDOWS
+#elif WINDOWS || LINUX
             return new OpenTKGamePlatform(game);
 #elif ANDROID
             return new AndroidGamePlatform(game);
-#elif LINUX
-            return new LinuxGamePlatform(game);
 #endif
         }
 
@@ -201,6 +199,10 @@ namespace Microsoft.Xna.Framework
         public virtual void BeforeInitialize()
         {
             IsActive = true;
+            if (this.Game.GraphicsDevice == null) {
+               var graphicsDeviceManager = (GraphicsDeviceManager)Game.Services.GetService(typeof(IGraphicsDeviceManager));
+               graphicsDeviceManager.CreateDevice();
+            }
         }
 
         /// <summary>
@@ -335,7 +337,7 @@ namespace Microsoft.Xna.Framework
 
         #endregion
 
-	public virtual void SwapBuffers() {}		
+        public virtual void Present() {}
     }
 }
 

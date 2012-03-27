@@ -3,12 +3,12 @@ using System.Runtime.InteropServices;
 
 #if MONOMAC
 using MonoMac.OpenGL;
-#elif WINDOWS
+#elif WINDOWS || LINUX
 using OpenTK.Graphics.OpenGL;
 #else
 using System.Text;
 using OpenTK.Graphics.ES20;
-#if IPHONE
+#if IPHONE || ANDROID
 using ShaderType = OpenTK.Graphics.ES20.All;
 using ShaderParameter = OpenTK.Graphics.ES20.All;
 using TextureUnit = OpenTK.Graphics.ES20.All;
@@ -147,49 +147,57 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 #endif
 			
+#if GLSLOPTIMIZER
 			//glslCode = GLSLOptimizer.Optimize (glslCode, shaderType);
+#endif
 			
-#if IPHONE
+#if IPHONE || ANDROID
 			glslCode = glslCode.Replace("#version 110\n", "");
-			glslCode = @"precision mediump float;
-						 precision mediump int;
-						"+glslCode;
+			glslCode = "precision mediump float;\nprecision mediump int;\n" + glslCode;
 #endif
-			
-			shader = GL.CreateShader (shaderType);
-#if IPHONE
-			GL.ShaderSource (shader, 1, new string[]{glslCode}, (int[])null);
+            Threading.Begin();
+            try
+            {
+                shader = GL.CreateShader(shaderType);
+#if IPHONE || ANDROID
+                GL.ShaderSource(shader, 1, new string[] { glslCode }, (int[])null);
 #else			
-			GL.ShaderSource (shader, glslCode);
+			    GL.ShaderSource (shader, glslCode);
 #endif
-			GL.CompileShader(shader);
-			
-			int compiled = 0;
-#if IPHONE
-			GL.GetShader (shader, ShaderParameter.CompileStatus, ref compiled);
+                GL.CompileShader(shader);
+
+                int compiled = 0;
+#if IPHONE || ANDROID
+                GL.GetShader(shader, ShaderParameter.CompileStatus, ref compiled);
 #else
-			GL.GetShader (shader, ShaderParameter.CompileStatus, out compiled);
+			    GL.GetShader (shader, ShaderParameter.CompileStatus, out compiled);
 #endif
-			if (compiled == (int)All.False) {
-#if IPHONE
-				string log = "";
-				int length = 0;
-				GL.GetShader (shader, ShaderParameter.InfoLogLength, ref length);
-				if (length > 0) {
-					var logBuilder = new StringBuilder(length);
-					GL.GetShaderInfoLog(shader, length, ref length, logBuilder);
-					log = logBuilder.ToString();
-				}
+                if (compiled == (int)All.False)
+                {
+#if IPHONE || ANDROID
+                    string log = "";
+                    int length = 0;
+                    GL.GetShader(shader, ShaderParameter.InfoLogLength, ref length);
+                    if (length > 0)
+                    {
+                        var logBuilder = new StringBuilder(length);
+                        GL.GetShaderInfoLog(shader, length, ref length, logBuilder);
+                        log = logBuilder.ToString();
+                    }
 #else
-				string log = GL.GetShaderInfoLog(shader);
+				    string log = GL.GetShaderInfoLog(shader);
 #endif
-				Console.WriteLine (log);
-				
-				GL.DeleteShader (shader);
-				throw new InvalidOperationException("Shader Compilation Failed");
-			}
-				
-			//MojoShader.NativeMethods.MOJOSHADER_freeParseData(parseDataPtr);
+                    Console.WriteLine(log);
+
+                    GL.DeleteShader(shader);
+                    throw new InvalidOperationException("Shader Compilation Failed");
+                }
+            }
+            finally
+            {
+                Threading.End();
+            }
+            //MojoShader.NativeMethods.MOJOSHADER_freeParseData(parseDataPtr);
 			//TODO: dispose properly - DXPreshader holds unmanaged data
 		}
 
@@ -374,7 +382,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
 						tex.Activate ();
 						
-						samplerStates[sampler.index].Activate(tex.glTarget);
+						samplerStates[sampler.index].Activate(tex.glTarget, tex.LevelCount > 1);
 						
 					}
 	

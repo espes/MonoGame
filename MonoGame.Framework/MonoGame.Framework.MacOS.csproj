@@ -52,8 +52,8 @@
     <Reference Include="GamepadBridge">
       <HintPath>..\ThirdParty\GamepadConfig\GamepadBridge.dll</HintPath>
     </Reference>
-    <Reference Include="MonoMac, Version=0.0.0.0, Culture=neutral">
-      <Private>False</Private>
+    <Reference Include="MonoMac">
+      <HintPath>..\ThirdParty\Libs\MonoMac.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
@@ -90,6 +90,7 @@
     <Compile Include="Ray.cs" />
     <Compile Include="Rectangle.cs" />
     <Compile Include="ReusableItemList.cs" />
+    <Compile Include="Threading.cs" />
     <Compile Include="Vector2.cs" />
     <Compile Include="Vector3.cs" />
     <Compile Include="Vector4.cs" />
@@ -252,6 +253,12 @@
     <Compile Include="GamerServices\MessageBoxIcon.cs" />
     <Compile Include="Graphics\PackedVector\IPackedVector.cs" />
     <Compile Include="Graphics\PackedVector\Short2.cs" />
+    <Compile Include="Graphics\PackedVector\HalfSingle.cs" />
+    <Compile Include="Graphics\PackedVector\HalfTypeHelper.cs" />
+    <Compile Include="Graphics\PackedVector\HalfVector2.cs" />
+    <Compile Include="Graphics\PackedVector\NormalizedShort2.cs" />
+    <Compile Include="Graphics\PackedVector\NormalizedShort4.cs" />
+    <Compile Include="Graphics\PresentationParameters.cs" />	
     <Compile Include="Graphics\SamplerStateCollection.cs" />
     <Compile Include="Content\ContentSerializerAttribute.cs" />
     <Compile Include="Content\ContentSerializerIgnoreAttribute.cs" />
@@ -400,6 +407,8 @@
     <Compile Include="Content\EndianBitConverter.cs" />
     <Compile Include="Content\Endianness.cs" />
     <Compile Include="Content\LittleEndianBitConverter.cs" />
+    <Compile Include="Graphics\Effect\GLSLEffectObject.cs" />
+    <Compile Include="Graphics\Effect\GLSLShader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="MacOS\" />
@@ -434,7 +443,13 @@
     <EmbeddedResource Include="Graphics\Effect\DualTextureEffect.bin" />
     <EmbeddedResource Include="Graphics\Effect\EnvironmentMapEffect.bin" />
     <EmbeddedResource Include="Graphics\Effect\SkinnedEffect.bin" />
+    <EmbeddedResource Include="Graphics\Effect\SpriteEffectGLSL.bin" />
     <EmbeddedResource Include="Graphics\Effect\SpriteEffect.bin" />
+    <EmbeddedResource Include="Graphics\Effect\BasicEffectGLSL.bin" />
+    <EmbeddedResource Include="Graphics\Effect\AlphaTestEffectGLSL.bin" />
+    <EmbeddedResource Include="Graphics\Effect\DualTextureEffectGLSL.bin" />
+    <EmbeddedResource Include="Graphics\Effect\EnvironmentMapEffectGLSL.bin" />
+    <EmbeddedResource Include="Graphics\Effect\SkinnedEffectGLSL.bin" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ThirdParty\Lidgren.Network\Lidgren.Network.MacOS.csproj">

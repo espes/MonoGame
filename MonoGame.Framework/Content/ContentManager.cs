@@ -58,6 +58,7 @@ namespace Microsoft.Xna.Framework.Content
 		private IServiceProvider serviceProvider;
 		private IGraphicsDeviceService graphicsDeviceService;
 		protected Dictionary<string, object> loadedAssets = new Dictionary<string, object>();
+		List<IDisposable> disposableAssets = new List<IDisposable>();
 		bool disposed;
 		
 		private static object ContentManagerLock = new object();
@@ -148,31 +149,38 @@ namespace Microsoft.Xna.Framework.Content
 
 		public virtual T Load<T>(string assetName)
 		{
-			if (string.IsNullOrEmpty(assetName))
-			{
-				throw new ArgumentNullException("assetName");
-			}
-			if (disposed)
-			{
-				throw new ObjectDisposedException("ContentManager");
-			}
+            if (string.IsNullOrEmpty(assetName))
+            {
+                throw new ArgumentNullException("assetName");
+            }
+            if (disposed)
+            {
+                throw new ObjectDisposedException("ContentManager");
+            }
 
-			// Check for a previously loaded asset first
-			object asset = null;
-			if (loadedAssets.TryGetValue(assetName, out asset))
-			{
-				if (asset is T)
-				{
-					return (T)asset;
-				}
-			}
+            T result = default(T);
+            // Serialize access to loadedAssets with a lock
+            lock (ContentManagerLock)
+            {
+                // Check for a previously loaded asset first
+                object asset = null;
+                if (loadedAssets.TryGetValue(assetName, out asset))
+                {
+                    if (asset is T)
+                    {
+                        return (T)asset;
+                    }
+                }
 
-            // Load the asset.
-			var result = ReadAsset<T>(assetName, null);
-			
-			// Cache the result.
-			loadedAssets.Add(assetName, result);
-			
+                // Load the asset.
+                result = ReadAsset<T>(assetName, null);
+
+                // Cache the result.
+                if (!loadedAssets.ContainsKey(assetName))
+                {
+                    loadedAssets.Add(assetName, result);
+                }
+            }
 			return result;
 		}
 		
@@ -232,11 +240,7 @@ namespace Microsoft.Xna.Framework.Content
 				
 				assetName = TitleContainer.GetFilename(Path.Combine (_rootDirectory, assetName));
 				
-				if ((typeof(T) == typeof(Curve))) 
-                {				
-                    assetName = CurveReader.Normalize(assetName);
-                }
-                else if ((typeof(T) == typeof(Texture2D)))
+                if ((typeof(T) == typeof(Texture2D)))
 				{
 					assetName = Texture2DReader.Normalize(assetName);
 				}
@@ -256,6 +260,10 @@ namespace Microsoft.Xna.Framework.Content
 				{
 					assetName = Video.Normalize(assetName);
 				}
+				else if ((typeof(T) == typeof(Effect)))
+				{
+					assetName = EffectReader.Normalize(assetName);
+				}
 	
 				if (string.IsNullOrEmpty(assetName))
 				{
@@ -264,7 +272,7 @@ namespace Microsoft.Xna.Framework.Content
 			
 				if ((typeof(T) == typeof(Texture2D)))
 				{
-					using (Stream assetStream = new FileStream(assetName, FileMode.Open, FileAccess.Read, FileShare.Read))
+					using (Stream assetStream = TitleContainer.OpenStream(assetName))
 					{
 						Texture2D texture = Texture2D.FromStream(
 							graphicsDeviceService.GraphicsDevice, assetStream);
@@ -288,6 +296,17 @@ namespace Microsoft.Xna.Framework.Content
 				else if ((typeof(T) == typeof(Video)))
 				{
 					result = new Video(assetName);
+				}
+				else if ((typeof(T) == typeof(Effect)))
+				{
+					using (Stream assetStream = new FileStream(assetName, FileMode.Open, FileAccess.Read, FileShare.Read))
+					{
+						MemoryStream effectStream = new MemoryStream ((int) assetStream.Length);
+						assetStream.Read (effectStream.GetBuffer(), 0, (int) assetStream.Length);
+						byte[] aad = effectStream.GetBuffer();
+						result = new Effect(this.graphicsDeviceService.GraphicsDevice, effectStream.GetBuffer());
+						effectStream.Close();
+					}
 				}
 			}
 			
@@ -407,6 +426,8 @@ namespace Microsoft.Xna.Framework.Content
 						using(reader)
 						{
 							result = reader.ReadAsset<T>();
+                            if (result is GraphicsResource)
+                                ((GraphicsResource)result).Name = originalAssetName;
 						}
 					}
 				}
@@ -424,9 +445,14 @@ namespace Microsoft.Xna.Framework.Content
 			{
 				throw new ContentLoadException("Could not load " + originalAssetName + " asset!");
 			}
-			
-			if ( recordDisposableObject != null && result is IDisposable )
-			    recordDisposableObject(result as IDisposable);
+
+			if (result is IDisposable)
+			{
+				if (recordDisposableObject != null)
+					recordDisposableObject(result as IDisposable);
+				else
+					disposableAssets.Add(result as IDisposable);
+			}
 			    
 			return (T)result;
 		}
@@ -438,8 +464,6 @@ namespace Microsoft.Xna.Framework.Content
                 ReloadAsset(asset.Key, asset.Value);
             }
         }
-		
-		
         
         protected void ReloadAsset(string originalAssetName, object currentAsset)
         {
@@ -463,21 +487,20 @@ namespace Microsoft.Xna.Framework.Content
 			}
 			
 			Stream stream = null;
-			bool loadXnb = false;
-			try {
+			//bool loadXnb = false;
+			try
+			{
 				//try load it traditionally
 				stream = OpenStream(assetName);
 				stream.Close();
-			} catch (ContentLoadException ex) {
+			}
+			catch (ContentLoadException ex)
+			{
 				//MonoGame try to load as a non-content file
+
+				assetName = TitleContainer.GetFilename(Path.Combine (_rootDirectory, assetName));
 				
-				assetName = TitleContainer.GetFilename(assetName);
-				
-                if ((currentAsset is Curve))
-                {
-                    assetName = CurveReader.Normalize(assetName);
-                }
-                else if ((currentAsset is Texture2D))
+                if ((currentAsset is Texture2D))
                 {
                     assetName = Texture2DReader.Normalize(assetName);
                 }
@@ -524,20 +547,18 @@ namespace Microsoft.Xna.Framework.Content
                 {
                 }
 			}
-			
-
 		}
 
 		public virtual void Unload()
 		{
 		    // Look for disposable assets.
-		    foreach (var pair in loadedAssets)
+		    foreach (var disposable in disposableAssets)
 		    {
-		        var disposable = pair.Value as IDisposable;
-		        if (disposable != null )
+		        if (disposable != null)
 		            disposable.Dispose();
 		    }
 		    RemoveContentManager(this);
+			disposableAssets.Clear();
 		    loadedAssets.Clear();
 		}
 

@@ -5,7 +5,7 @@ using System.Text;
 
 #if MONOMAC
 using MonoMac.OpenGL;
-#elif WINDOWS
+#elif WINDOWS || LINUX
 using OpenTK.Graphics.OpenGL;
 #else
  #if ES11
@@ -23,7 +23,7 @@ using TexCoordPointerType = OpenTK.Graphics.ES11.All;
 
  #else
 using OpenTK.Graphics.ES20;
-  #if IPHONE
+  #if IPHONE || ANDROID
 using BlendEquationMode = OpenTK.Graphics.ES20.All;
 using BlendingFactorSrc = OpenTK.Graphics.ES20.All;
 using BlendingFactorDest = OpenTK.Graphics.ES20.All;
@@ -174,12 +174,13 @@ namespace Microsoft.Xna.Framework.Graphics
                     return VertexAttribPointerType.Short;
 
                 case VertexElementFormat.NormalizedShort2:
-                    return VertexAttribPointerType.UnsignedShort;
+                    return VertexAttribPointerType.Short;
 
                 case VertexElementFormat.NormalizedShort4:
-                    return VertexAttribPointerType.UnsignedShort;
-#if MONOMAC
-                case VertexElementFormat.HalfVector2:
+                    return VertexAttribPointerType.Short;
+                
+#if MONOMAC || WINDOWS || LINUX
+               case VertexElementFormat.HalfVector2:
                     return VertexAttribPointerType.HalfFloat;
 
                 case VertexElementFormat.HalfVector4:
@@ -188,6 +189,22 @@ namespace Microsoft.Xna.Framework.Graphics
             }
 
             throw new NotImplementedException();
+        }
+
+        public static bool OpenGLVertexAttribNormalized(this VertexElement element)
+        {
+            if (element.VertexElementUsage == VertexElementUsage.Color)
+                return true;
+
+            switch (element.VertexElementFormat)
+            {
+                case VertexElementFormat.NormalizedShort2:
+                case VertexElementFormat.NormalizedShort4:
+                    return true;
+
+                default:
+                    return false;
+            }
         }
 
         public static ColorPointerType OpenGLColorPointerType(this VertexElementFormat elementFormat)
@@ -334,7 +351,7 @@ namespace Microsoft.Xna.Framework.Graphics
             switch (surfaceFormat)
             {
                 case SurfaceFormat.Color:
-                    return 0;
+                    return 4;
                 case SurfaceFormat.Dxt3:
                     return 4;
                 case SurfaceFormat.Bgra4444:
@@ -343,6 +360,8 @@ namespace Microsoft.Xna.Framework.Graphics
                     return 2;
                 case SurfaceFormat.Alpha8:
                     return 1;
+				case SurfaceFormat.NormalizedByte4:
+					return 4;
                 default:
                     throw new NotImplementedException();
             }
@@ -444,7 +463,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			case Blend.InverseSourceAlpha:
 				return BlendingFactorSrc.OneMinusSrcAlpha;
 			case Blend.InverseSourceColor:
-#if MONOMAC || WINDOWS
+#if MONOMAC || WINDOWS || LINUX
 				return (BlendingFactorSrc)All.OneMinusSrcColor;
 #else
 				return BlendingFactorSrc.OneMinusSrcColor;
@@ -456,7 +475,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			case Blend.SourceAlphaSaturation:
 				return BlendingFactorSrc.SrcAlphaSaturate;
 			case Blend.SourceColor:
-#if MONOMAC || WINDOWS
+#if MONOMAC || WINDOWS || LINUX
 				return (BlendingFactorSrc)All.SrcColor;
 #else
 				return BlendingFactorSrc.SrcColor;
@@ -525,27 +544,31 @@ namespace Microsoft.Xna.Framework.Graphics
 				glFormat = PixelFormat.Rgba;
 				glType = PixelType.UnsignedByte;
 				break;
-			case SurfaceFormat.Bgr565 : 
+			case SurfaceFormat.Bgr565:
 				glInternalFormat = PixelInternalFormat.Rgb;
 				glFormat = PixelFormat.Rgb;
 				glType = PixelType.UnsignedShort565;
 				break;
-			case SurfaceFormat.Bgra4444 : 
+			case SurfaceFormat.Bgra4444:
+#if IPHONE
 				glInternalFormat = PixelInternalFormat.Rgba;
+#else
+				glInternalFormat = PixelInternalFormat.Rgba4;
+#endif
 				glFormat = PixelFormat.Rgba;
 				glType = PixelType.UnsignedShort4444;
 				break;
-			case SurfaceFormat.Bgra5551 : 
+			case SurfaceFormat.Bgra5551:
 				glInternalFormat = PixelInternalFormat.Rgba;
 				glFormat = PixelFormat.Rgba;
 				glType = PixelType.UnsignedShort5551;
 				break;
-			case SurfaceFormat.Alpha8 : 
+			case SurfaceFormat.Alpha8:
 				glInternalFormat = PixelInternalFormat.Luminance;
 				glFormat = PixelFormat.Luminance;
 				glType = PixelType.UnsignedByte;
 				break;
-#if !IPHONE
+#if !IPHONE && !ANDROID
 			case SurfaceFormat.Dxt1:
 				glInternalFormat = PixelInternalFormat.CompressedRgbaS3tcDxt1Ext;
 				glFormat = (PixelFormat)All.CompressedTextureFormats;
@@ -560,7 +583,7 @@ namespace Microsoft.Xna.Framework.Graphics
 				break;
 #endif
 				
-#if IPHONE
+#if IPHONE || ANDROID
 			case SurfaceFormat.RgbPvrtc2Bpp:
 				glInternalFormat = PixelInternalFormat.CompressedRgbPvrtc2Bppv1Img;
 				glFormat = (PixelFormat)All.CompressedTextureFormats;

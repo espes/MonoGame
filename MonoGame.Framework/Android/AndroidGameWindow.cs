@@ -70,33 +70,35 @@ namespace Microsoft.Xna.Framework
 		private Game _game;
 		private GameTime _updateGameTime;
         private GameTime _drawGameTime;
-        private DateTime _lastUpdate;
-		private DateTime _now;
+        private DisplayOrientation supportedOrientations = DisplayOrientation.Default;
         private DisplayOrientation _currentOrientation;
 		private GestureDetector gesture = null;
-		private bool _needsToResetElapsedTime = false;
-		private bool _isFirstTime = true;
-		private TimeSpan _extraElapsedTime;		
+		private bool resetUpdateElapsedTime = false;
+        private bool resetRenderElapsedTime = false;
+        double updateFrameElapsed;
+        double renderFrameElapsed;
+        double updateFrameTotal;
+        double renderFrameTotal;
+        double updateFrameLast;
+        double renderFrameLast;
+        public GraphicsContext BackgroundContext;
 
         public AndroidGameWindow(Context context, Game game) : base(context)
         {
             _game = game;
-            Initialize();							
+            Initialize();
         }		
 						
         private void Initialize()
         {
-            
-			this.Closed +=	new EventHandler<EventArgs>(GameWindow_Closed);            
+
+            this.Closed +=	new EventHandler<EventArgs>(GameWindow_Closed);            
 			clientBounds = new Rectangle(0, 0, Context.Resources.DisplayMetrics.WidthPixels, Context.Resources.DisplayMetrics.HeightPixels);
 
             // Initialize GameTime
             _updateGameTime = new GameTime();
             _drawGameTime = new GameTime();
 
-            // Initialize _lastUpdate
-            _lastUpdate = DateTime.Now;
-					
 			gesture = new GestureDetector(new GestureListener((AndroidGameActivity)this.Context));
 			
             this.RequestFocus();
@@ -107,7 +109,8 @@ namespace Microsoft.Xna.Framework
 
 		public void ResetElapsedTime ()
 		{
-			_needsToResetElapsedTime = true;
+			resetUpdateElapsedTime = true;
+            resetRenderElapsedTime = true;
 		}
 		
 		void GameWindow_Closed(object sender,EventArgs e)
@@ -126,7 +129,7 @@ namespace Microsoft.Xna.Framework
         {
             Keyboard.KeyDown(keyCode);
             // we need to handle the Back key here because it doesnt work any other way
-            if (keyCode == Keycode.Back) //_game.Exit();
+            if (keyCode == Keycode.Back)
                 GamePad.Instance.SetBack();
 
             if (keyCode == Keycode.VolumeUp)
@@ -150,25 +153,56 @@ namespace Microsoft.Xna.Framework
 		}
 		
 		protected override void CreateFrameBuffer()
-		{	    
+		{
+            // Allow threaded resource loading
+            OpenTK.Graphics.GraphicsContext.ShareContexts = true;
+
 #if true			
 			try
             {
                 GLContextVersion = GLContextVersion.Gles2_0;
-                GraphicsDevice.OpenGLESVersion = GLContextVersion;
 				base.CreateFrameBuffer();
 		    } 
 			catch (Exception) 
 #endif			
 			{
-		        //device doesn't support OpenGLES 2.0; retry with 1.1:
+#if ES11
+                //device doesn't support OpenGLES 2.0; retry with 1.1:
                 GLContextVersion = GLContextVersion.Gles1_1;
-                GraphicsDevice.OpenGLESVersion = GLContextVersion;
 				base.CreateFrameBuffer();
+#else
+                throw new NotSupportedException("Could not create OpenGLES 2.0 frame buffer");
+#endif
 		    }
-			_game.GraphicsDevice.Initialize();
+            if (_game.GraphicsDevice != null)
+            {
+                _game.GraphicsDevice.Initialize();
+            }
+
+            if (!GraphicsContext.IsCurrent)
+                MakeCurrent();
+
+            // Create a context for the background loading
+            GraphicsContextFlags flags = GraphicsContextFlags.Default;
+#if DEBUG
+            //flags |= GraphicsContextFlags.Debug;
+#endif
+            GraphicsMode mode = new GraphicsMode();
+            BackgroundContext = new GraphicsContext(mode, WindowInfo, 2, 0, flags);
+            Threading.BackgroundContext = BackgroundContext;
+            Threading.WindowInfo = WindowInfo;
 		}
-	
+
+        protected override void OnLoad(EventArgs e)
+        {
+            // FIXME: Uncomment this line when moving to Mono for Android 4.0.5
+            //MakeCurrent();
+
+            // Make sure an Update is called before a Draw
+            updateFrameElapsed = _game.TargetElapsedTime.TotalSeconds;
+
+            base.OnLoad(e);
+        }
 
         #region AndroidGameView Methods
 
@@ -183,170 +217,114 @@ namespace Microsoft.Xna.Framework
             if (!GraphicsContext.IsCurrent)
                 MakeCurrent();
 
-            if (_game != null) {
-                _drawGameTime.Update(_now - _lastUpdate);                
+            if (_game != null)
+            {
+                double targetElapsed = _game.TargetElapsedTime.TotalSeconds;
+                renderFrameElapsed += e.Time;
+                if (renderFrameElapsed < (renderFrameLast + targetElapsed))
+                    return;
+
+                if (resetRenderElapsedTime)
+                {
+                    renderFrameElapsed = renderFrameLast + targetElapsed;
+                    resetRenderElapsedTime = false;
+                }
+
+                double delta = renderFrameElapsed - renderFrameLast;
+                _drawGameTime.Update(TimeSpan.FromSeconds(delta));
+                // If the elapsed time is more than the target elapsed time, the game is running slowly
+                _drawGameTime.IsRunningSlowly = delta > targetElapsed;
                 _game.DoDraw(_drawGameTime);
-				_lastUpdate = _now;
+                renderFrameLast = renderFrameElapsed;
             }
-            try
-            {
-                SwapBuffers();
-            }
-            catch(Exception ex)
-            {
-                Android.Util.Log.Error("Error in swap buffers", ex.ToString());
-            }
+
+            _game.Tick();
         }
 
         protected override void OnUpdateFrame(FrameEventArgs e)
 		{			
 			base.OnUpdateFrame(e);
-			
+
 			if (_game != null )
 			{
-                //ObserveDeviceRotation();				
-				_now = DateTime.Now;
-				
-				if (_isFirstTime) {
-					// Initialize GameTime
-					_updateGameTime = new GameTime ();
-					_drawGameTime = new GameTime ();
-					_lastUpdate = DateTime.Now;
-					_isFirstTime = false;
+                double targetElapsed = _game.TargetElapsedTime.TotalSeconds;
+                updateFrameElapsed += e.Time;
+                if (updateFrameElapsed < (updateFrameLast + targetElapsed))
+                    return;
+
+				if (resetUpdateElapsedTime)
+                {
+                    updateFrameElapsed = updateFrameLast + targetElapsed;
+					resetUpdateElapsedTime = false;
 				}
 
-				if (_needsToResetElapsedTime) {
-					_drawGameTime.ResetElapsedTime();
-					_needsToResetElapsedTime = false;
-				}
-				
-				
-				_updateGameTime.Update(_now - _lastUpdate);
-				
-				TimeSpan catchup = _updateGameTime.ElapsedGameTime;
-				if (catchup > _game.TargetElapsedTime) {
-					while (catchup > _game.TargetElapsedTime) {
-						catchup -= _game.TargetElapsedTime;
-						_updateGameTime.ElapsedGameTime = _game.TargetElapsedTime;
-						_game.DoUpdate (_updateGameTime);
-						_extraElapsedTime += catchup;
-					}
-					if (_extraElapsedTime > _game.TargetElapsedTime) {
-						_game.DoUpdate (_updateGameTime);
-						_extraElapsedTime = TimeSpan.Zero;
-					}
-				}
-				else {
-					_game.DoUpdate (_updateGameTime);
-				}
-								
+                double delta = updateFrameElapsed - updateFrameLast;
+                if (_game.IsFixedTimeStep)
+                {
+                    // If we will be calling Update two or more times, the game is running slowly
+                    _updateGameTime.IsRunningSlowly = updateFrameElapsed >= updateFrameLast + (targetElapsed * 2.0);
+                    double start = updateFrameLast;
+                    while ((delta >= targetElapsed) && ((updateFrameLast - start) < 0.5))
+                    {
+                        _updateGameTime.Update(TimeSpan.FromSeconds(targetElapsed));
+                        _game.DoUpdate(_updateGameTime);
+                        delta -= targetElapsed;
+                        updateFrameLast += targetElapsed;
+                    }
+                }
+                else
+                {
+                    // No fixed step, so just update once with a potentially large elapsed time
+                    _updateGameTime.Update(TimeSpan.FromSeconds(delta));
+                    // If the elapsed time is more than the target elapsed time, the game is running slowly
+                    _updateGameTime.IsRunningSlowly = delta > targetElapsed;
+                    _game.DoUpdate(_updateGameTime);
+                    updateFrameLast = updateFrameElapsed;
+                }
 			}
 		}
 		
 		#endregion
 		
 		
-
-        internal void SetOrientation(DisplayOrientation currentorientation)
+        internal void SetSupportedOrientations(DisplayOrientation orientations)
         {
-            var deviceManager = (IGraphicsDeviceManager)_game.Services.GetService(typeof(IGraphicsDeviceManager));
-            if (deviceManager == null)
-                return;
+            supportedOrientations = orientations;
+        }
 
+        internal void SetOrientation(DisplayOrientation newOrientation)
+        {
+            DisplayOrientation supported = supportedOrientations;
             // Calculate supported orientations if it has been left as "default" and only default
-            DisplayOrientation supportedOrientations = (deviceManager as GraphicsDeviceManager).SupportedOrientations;					
-			var allowedOrientation = DisplayOrientation.LandscapeLeft; 				
-			if ((supportedOrientations == DisplayOrientation.Default))
-			{
-			  // if we have default only we only allow Landscape
-			  allowedOrientation = allowedOrientation | DisplayOrientation.LandscapeLeft | DisplayOrientation.LandscapeRight; 				
-			}
-			if ((supportedOrientations == DisplayOrientation.LandscapeLeft))
-			{
-			  // if we have default only we only allow Landscape
-			  allowedOrientation = DisplayOrientation.LandscapeLeft; 				
-			}
-			if ((supportedOrientations & DisplayOrientation.LandscapeLeft) != 0)
-			{
-			  // if we have default only we only allow Landscape
-			  allowedOrientation = allowedOrientation | DisplayOrientation.LandscapeLeft; 				
-			}
-			if ((supportedOrientations == DisplayOrientation.LandscapeRight))
-			{
-			  // if we have default only we only allow Landscape
-			  allowedOrientation = DisplayOrientation.LandscapeRight; 				
-			}
-			if ((supportedOrientations & DisplayOrientation.LandscapeRight) != 0)
-			{
-			  // if we have default only we only allow Landscape
-			  allowedOrientation = allowedOrientation | DisplayOrientation.LandscapeRight; 				
-			}
-			if ((supportedOrientations == DisplayOrientation.Portrait))
-			{
-			  // if we have Portrait only we only allow Landscape
-			  allowedOrientation = DisplayOrientation.Portrait; 				
-			}
-			if ((supportedOrientations & DisplayOrientation.Portrait) != 0)
-			{
-			  // if we have default only we only allow Landscape
-			  allowedOrientation = allowedOrientation | DisplayOrientation.Portrait; 				
-			}
-			
-			// ok we default to landscape left
-			var actualOrientation = DisplayOrientation.LandscapeLeft;
-			// now based on the  orientation of the device we 
-			// decide of we honour the device orientation or force our own
-			
-			// so if we are in Portrait but we allow only LandScape we stay in landscape
-			if (allowedOrientation == DisplayOrientation.Portrait)
-			{
-				actualOrientation = DisplayOrientation.Portrait;
-			}
-			else
-			if (allowedOrientation == DisplayOrientation.LandscapeLeft)
-			{
-				actualOrientation = DisplayOrientation.LandscapeLeft;
-			}
-			else
-			if (allowedOrientation == DisplayOrientation.LandscapeRight)
-			{
-				actualOrientation = DisplayOrientation.LandscapeRight;
-			}	
-			/*else 
-			if (_game.GraphicsDevice.PresentationParameters.BackBufferHeight < _game.GraphicsDevice.PresentationParameters.BackBufferWidth)
-			{
-				actualOrientation = DisplayOrientation.LandscapeLeft;
-			}
-			else 
-			if (_game.GraphicsDevice.PresentationParameters.BackBufferHeight > _game.GraphicsDevice.PresentationParameters.BackBufferWidth)
-			{
-				actualOrientation = DisplayOrientation.Portrait;
-			}*/
-			
-            switch (currentorientation) {
+            if (supported == DisplayOrientation.Default)
+            {
+                var deviceManagerIntf = (IGraphicsDeviceManager)_game.Services.GetService(typeof(IGraphicsDeviceManager));
+                if (deviceManagerIntf == null)
+                    return;
+                GraphicsDeviceManager deviceManager = deviceManagerIntf as GraphicsDeviceManager;
+                if (deviceManager.PreferredBackBufferWidth > deviceManager.PreferredBackBufferHeight)
+                    supported = DisplayOrientation.Portrait;
+                else
+                    supported = DisplayOrientation.LandscapeLeft | DisplayOrientation.LandscapeRight;
+            }
 
-			case DisplayOrientation.Portrait:
-                    if ((allowedOrientation & DisplayOrientation.Portrait) != 0) {
-                        actualOrientation = DisplayOrientation.Portrait;
-                    }
-                    break;
-				case DisplayOrientation.LandscapeRight:	
-				    if ((allowedOrientation & DisplayOrientation.LandscapeRight) != 0) {
-                        actualOrientation = DisplayOrientation.LandscapeRight;
-                    }				    
-				    break;
-                case DisplayOrientation.LandscapeLeft:				     
-                default:
-					if ((allowedOrientation & DisplayOrientation.LandscapeLeft) != 0) {
-				    	actualOrientation = DisplayOrientation.LandscapeLeft;
-					}
-                    break;
+            // If the new orientation is not supported, force a supported orientation
+            if ((supported & newOrientation) == 0)
+            {
+                if ((supported & DisplayOrientation.LandscapeLeft) != 0)
+                    newOrientation = DisplayOrientation.LandscapeLeft;
+                else if ((supported & DisplayOrientation.LandscapeRight) != 0)
+                    newOrientation = DisplayOrientation.LandscapeRight;
+                else if ((supported & DisplayOrientation.Portrait) != 0)
+                    newOrientation = DisplayOrientation.Portrait;
             }
 			
-			
-			CurrentOrientation = actualOrientation;      
-            _game.GraphicsDevice.PresentationParameters.DisplayOrientation = actualOrientation;
-            TouchPanel.DisplayOrientation = actualOrientation;
+			CurrentOrientation = newOrientation;
+            if (_game.GraphicsDevice != null)
+            {
+                _game.GraphicsDevice.PresentationParameters.DisplayOrientation = newOrientation;
+            }
+            TouchPanel.DisplayOrientation = newOrientation;
         }
 
         private Dictionary<IntPtr, TouchLocation> _previousTouches = new Dictionary<IntPtr, TouchLocation>();
@@ -366,8 +344,14 @@ namespace Microsoft.Xna.Framework
                 position.X = this.Width - position.X;
                 position.Y = this.Height - position.Y;
             }
-            position.X = (position.X / Width) * _game.GraphicsDevice.Viewport.Width;
-            position.Y = (position.Y / Height) * _game.GraphicsDevice.Viewport.Height;
+
+            //Fix for ClientBounds
+            position.X -= ClientBounds.X;
+            position.Y -= ClientBounds.Y;
+
+            //Fix for Viewport
+            position.X = (position.X / ClientBounds.Width) * _game.GraphicsDevice.Viewport.Width;
+            position.Y = (position.Y / ClientBounds.Height) * _game.GraphicsDevice.Viewport.Height;
             //Android.Util.Log.Info("MonoGameInfo", String.Format("Touch {0}x{1}", position.X, position.Y));
         }
 
@@ -386,28 +370,23 @@ namespace Microsoft.Xna.Framework
                 // DOWN                
                 case 0:
                 case 5:
-                    index = collection.FindById(e.GetPointerId(e.ActionIndex), out tlocation);
+                    index = collection.FindIndexById(id, out tlocation);
                     if (index < 0)
                     {
                         tlocation = new TouchLocation(id, TouchLocationState.Pressed, position);
                         collection.Add(tlocation);
                     }
-                    else
-                    {
-                        tlocation.State = TouchLocationState.Pressed;
-                        tlocation.Position = position;
-                    }
                     break;
                 // UP                
                 case 1:
                 case 6:
-                    index = collection.FindById(e.GetPointerId(e.ActionIndex), out tlocation);
+                    index = collection.FindIndexById(id, out tlocation);
                     if (index >= 0)
                     {
                         tlocation.State = TouchLocationState.Released;
                         collection[index] = tlocation;
                     }	
-				break;
+				    break;
                 // MOVE                
                 case 2:
                     for (int i = 0; i < e.PointerCount; i++)
@@ -416,7 +395,7 @@ namespace Microsoft.Xna.Framework
                         position.X = e.GetX(i);
                         position.Y = e.GetY(i);
                         UpdateTouchPosition(ref position);
-                        index = collection.FindById(id, out tlocation);
+                        index = collection.FindIndexById(id, out tlocation);
                         if (index >= 0)
                         {
                             tlocation.State = TouchLocationState.Moved;
@@ -428,7 +407,7 @@ namespace Microsoft.Xna.Framework
                 // CANCEL, OUTSIDE                
                 case 3:
                 case 4:
-                    index = collection.FindById(id, out tlocation);
+                    index = collection.FindIndexById(id, out tlocation);
                     if (index >= 0)
                     {
                         tlocation.State = TouchLocationState.Invalid;
@@ -462,6 +441,12 @@ namespace Microsoft.Xna.Framework
 			{
 				return clientBounds;
 			}
+            internal set
+            {
+                clientBounds = value;
+                //if(ClientSizeChanged != null)
+                //    ClientSizeChanged(this, EventArgs.Empty);
+            }
 		}
 		
 		public bool AllowUserResizing 

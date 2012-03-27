@@ -46,6 +46,10 @@ using OpenTK.Graphics.ES11;
 using OpenTK.Graphics.ES20;
 #endif
 
+#if ANDROID
+using Android.Views;
+#endif
+
 using Microsoft.Xna.Framework.Graphics;
 
 namespace Microsoft.Xna.Framework
@@ -85,9 +89,9 @@ namespace Microsoft.Xna.Framework
 		public void CreateDevice()
 		{
 			_graphicsDevice = new GraphicsDevice();
-			_graphicsDevice.PresentationParameters = new PresentationParameters();
 
 			Initialize();
+			ApplyChanges();
 			
 			OnDeviceCreated(EventArgs.Empty);
 		}
@@ -150,6 +154,7 @@ namespace Microsoft.Xna.Framework
 
         public void ApplyChanges()
         {
+            _game.Window.SetSupportedOrientations(_supportedOrientations);
         }
 
 		private void Initialize()
@@ -157,7 +162,7 @@ namespace Microsoft.Xna.Framework
 			// Set "full screen"  as default
 			_graphicsDevice.PresentationParameters.IsFullScreen = true;
 
-			if (_preferMultiSampling) 
+			if (_preferMultiSampling)
 			{
 				_graphicsDevice.PreferedFilter = All.Linear;
 			}
@@ -194,10 +199,23 @@ namespace Microsoft.Xna.Framework
 				wantFullScreen = value;
 				if (_graphicsDevice != null) 
 				{
-					_graphicsDevice.PresentationParameters.IsFullScreen = value;	
+					_graphicsDevice.PresentationParameters.IsFullScreen = value;
+#if ANDROID
+                    ForceSetFullScreen();
+#endif
 				}
             }
         }
+
+#if ANDROID
+        internal void ForceSetFullScreen()
+        {
+            if (IsFullScreen)
+                Game.Activity.Window.SetFlags(WindowManagerFlags.Fullscreen, WindowManagerFlags.Fullscreen);
+            else
+                Game.Activity.Window.SetFlags(WindowManagerFlags.ForceNotFullscreen, WindowManagerFlags.ForceNotFullscreen);
+        }
+#endif
 
         public bool PreferMultiSampling
         {
@@ -290,6 +308,11 @@ namespace Microsoft.Xna.Framework
 				_supportedOrientations = value;
 			}
 		}
+
+        internal void ResetClientBounds()
+        {
+            // do nothing for now
+        }
 
     }
 }
