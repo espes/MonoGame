@@ -52,6 +52,35 @@ namespace Microsoft.Xna.Framework.GamerServices
 
 	public class GamerCollection<T> : ReadOnlyCollection<T>, IEnumerable<T>, IEnumerable where T : Gamer
 	{	
+		public struct GamerCollectionEnumerator : IEnumerator<T>, IDisposable, IEnumerator
+		{
+			internal GamerCollectionEnumerator(IList<T> list)
+			{
+
+			}
+			public T Current {
+				get {
+					throw new NotImplementedException ();
+				}
+			}
+			object IEnumerator.Current {
+				get {
+					throw new NotImplementedException ();
+				}
+			}
+			public bool MoveNext ()
+			{
+				throw new NotImplementedException ();
+			}
+			void IEnumerator.Reset ()
+			{
+				throw new NotImplementedException ();
+			}
+			public void Dispose ()
+			{
+			}
+		}
+
 		internal GamerCollection(List<T> list): base(list)
 		{
 		}
@@ -84,15 +113,10 @@ namespace Microsoft.Xna.Framework.GamerServices
 		internal void RemoveGamerAt (int item) {
 			base.Items.RemoveAt (item);
 		}		
-		
-//	public IEnumerator<Gamer> GetEnumerator()
-//        {
-//            return this.GetEnumerator();
-//        }
-		
-	    IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator();
-        }
+
+		public new GamerCollection<T>.GamerCollectionEnumerator GetEnumerator()
+		{
+			return new GamerCollection<T>.GamerCollectionEnumerator(base.Items);
+		}
 	}
 }

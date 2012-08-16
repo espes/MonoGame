@@ -102,9 +102,14 @@ namespace Microsoft.Xna.Framework.Media
                     _sound.Dispose();
                     _sound = null;
                 }
+				IsDisposed = true;
             }
 #endif
         }
+
+		public bool IsDisposed { get; private set; }
+
+
         
 		public bool Equals(Song song) 		
         {

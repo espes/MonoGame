@@ -67,5 +67,11 @@ namespace Microsoft.Xna.Framework.GamerServices
 				throw new NotSupportedException();
 			}
 		}
+
+		//Part of XNA XDK Extensions
+		public void SetPresenceModeString(string mode)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

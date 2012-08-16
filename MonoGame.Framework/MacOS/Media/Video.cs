@@ -73,8 +73,28 @@ namespace Microsoft.Xna.Framework.Media
 				return _backColor;
 			}
 		}
+
+		public int Width {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
+
+		public int Height {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
 		
-		public string FileName
+		public TimeSpan Duration
+		{
+			get
+			{
+				return new TimeSpan( mMovie.Duration.TimeValue );
+			}
+		}
+		
+		internal string FileName
 		{
 			get 
 			{
@@ -145,15 +165,6 @@ namespace Microsoft.Xna.Framework.Media
 			{
 				// TODO When Xamarain fix the set Volume mMovie.Volume = value;
 			}
-		}
-		
-		internal TimeSpan Duration
-		{
-			get
-			{
-				return new TimeSpan( mMovie.Duration.TimeValue );
-			}
-			
 		}
 		
 		internal TimeSpan CurrentPosition

@@ -184,6 +184,11 @@ namespace Microsoft.Xna.Framework.GamerServices
 
 		}
 
+		public static void ShowGamerCard (PlayerIndex player, Gamer gamer)
+		{
+			throw new NotImplementedException ();
+		}
+
 		public static void Show ()
 		{
 			/*GKPeerPickerController ppc = new GKPeerPickerController();

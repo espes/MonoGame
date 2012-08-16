@@ -226,6 +226,17 @@ namespace Microsoft.Xna.Framework.GamerServices
 			}
 		}
 
+		//Part of XNA SDK Extensions / Windows Phone extensions
+		public IAsyncResult BeginAwardAvatarAssets(string[] assetKeys, AsyncCallback callback, Object state)
+		{
+			throw new NotImplementedException ();
+		}
+
+		public IAsyncResult BeginAwardGamerPicture(string key, AsyncCallback callback, Object state)
+		{
+			throw new NotImplementedException ();
+		}
+
 		#endregion
 
 		#region Properties

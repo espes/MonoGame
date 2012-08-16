@@ -142,7 +142,7 @@ namespace Microsoft.Xna.Framework.Media
 
         public static bool IsShuffled { get; set; }
 
-        public static bool IsVisualizationEnabled { get { return false; } }
+		public static bool IsVisualizationEnabled { get; set; }
 #if !WINRT
         public static TimeSpan PlayPosition
         {
@@ -338,6 +338,12 @@ namespace Microsoft.Xna.Framework.Media
             else            
                 Play(nextSong);                            
 		}
+
+		public static void GetVisualizationData (VisualizationData visualizationData)
+		{
+			throw new NotImplementedException ();
+		}
+
     }
 }
 

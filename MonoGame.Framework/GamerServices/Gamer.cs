@@ -136,6 +136,12 @@ namespace Microsoft.Xna.Framework.GamerServices
                 return _signedInGamers;
             }
         }
+
+		public LeaderboardWriter LeaderboardWriter {
+			get {
+				throw new NotImplementedException ();
+			}
+		}
         #endregion
     }
 }

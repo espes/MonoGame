@@ -36,10 +36,12 @@ or conditions. You may have additional consumer rights under your local laws whi
 permitted under your local laws, the contributors exclude the implied warranties of merchantability, fitness for a particular
 purpose and non-infringement.
 */
+
 #endregion License
 
 #region Using Statements
 using System;
+using System.IO;
 using System.Globalization;
 
 using Microsoft.Xna.Framework.Graphics;
@@ -52,11 +54,15 @@ namespace Microsoft.Xna.Framework.GamerServices
 	public sealed class GamerProfile : IDisposable
 	{
 	#region Methods
+		public Stream GetGamerPicture ()
+		{
+			throw new NotImplementedException ();
+		}
+
 		public void Dispose ()
 		{
 
 		}
-
 	#endregion
 
 	#region Properties

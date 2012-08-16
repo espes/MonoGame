@@ -41,11 +41,24 @@
 using System;
 namespace Microsoft.Xna.Framework.GamerServices
 {
-	public class FriendGamer : Gamer
+	public sealed class FriendGamer : Gamer
 	{
-		public FriendGamer()
+		internal FriendGamer()
 		{
 		}
+
+		public bool FriendRequestSentTo {
+			get {
+				return false;
+			}
+		}
+
+		public bool FriendRequestReceivedFrom {
+			get {
+				return false;
+			}
+		}
+
 	}
 }
 

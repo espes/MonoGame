@@ -54,5 +54,6 @@ namespace Microsoft.Xna.Framework.Net
 
 		PlayerMatch,	// Uses the Xbox LIVE servers. This enables connection to other machines over the Internet. It requires a LIVE Silver Membership for Windows-based games or a LIVE Gold membership for Xbox 360 games. Games in development will also require an XNA Creators Club premium membership. While in trial mode, Indie games downloaded from Xbox LIVE Markeplace will not have access to LIVE matchmaking.
 		Ranked,		// All session matches are ranked. This option is available only for commercial games that have passed Xbox LIVE certification. Due to the competitive nature of the gameplay, this session type does not support join-in-progress.
+		LocalWithLeaderboards, // Creates a local session with access to write to leaderboards on the Xbox LIVE servers. This local session type allows guests or other Xbox LIVE player profiles to join the session.
 	}
 }
