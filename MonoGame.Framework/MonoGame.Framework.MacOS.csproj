@@ -475,6 +475,7 @@
     <Compile Include="MiscUtil\Endianness.cs" />
     <Compile Include="MiscUtil\LittleEndianBitConverter.cs" />
     <Compile Include="Desktop\Audio\SoundEffectInstance.cs" />
+    <Compile Include="Content\ContentReaders\VideoReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="MacOS\" />
