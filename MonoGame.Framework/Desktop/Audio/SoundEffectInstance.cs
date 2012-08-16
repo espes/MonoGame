@@ -89,6 +89,7 @@ namespace Microsoft.Xna.Framework.Audio
 		{
 			sourceId = 0;
 			hasSourceId = false;
+			soundState = SoundState.Stopped;
 			//Console.WriteLine ("recycled: " + soundEffect.Name);
 		}
 
@@ -100,6 +101,7 @@ namespace Microsoft.Xna.Framework.Audio
 
 		public void Dispose ()
 		{
+			this.Stop(true);
 			soundBuffer.Reserved -= HandleSoundBufferReserved;
 			soundBuffer.Recycled -= HandleSoundBufferRecycled;
 			soundBuffer.Dispose ();
@@ -191,10 +193,13 @@ namespace Microsoft.Xna.Framework.Audio
 			//Console.WriteLine ("playing: " + sourceId + " : " + soundEffect.Name);
 			soundState = SoundState.Playing;
 		}
-
+		
 		public void Resume ()
 		{
-			Play ();
+			if (hasSourceId) {
+				controller.PlaySound (soundBuffer);
+			}
+			soundState = SoundState.Playing;
 		}
 
 		public void Stop ()

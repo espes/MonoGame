@@ -374,7 +374,6 @@
     <Compile Include="Graphics\GraphicsDevice.cs" />
     <Compile Include="MacOS\Audio\OpenALSupport.cs" />
     <Compile Include="MacOS\Audio\SoundEffect.cs" />
-    <Compile Include="MacOS\Audio\SoundEffectInstance.cs" />
     <Compile Include="PrimaryThreadLoader.cs" />
     <Compile Include="Graphics\States\GLStateManager.cs" />
     <Compile Include="Graphics\Effect\EffectPass.cs" />
@@ -475,6 +474,7 @@
     <Compile Include="MiscUtil\EndianBitConverter.cs" />
     <Compile Include="MiscUtil\Endianness.cs" />
     <Compile Include="MiscUtil\LittleEndianBitConverter.cs" />
+    <Compile Include="Desktop\Audio\SoundEffectInstance.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="MacOS\" />
