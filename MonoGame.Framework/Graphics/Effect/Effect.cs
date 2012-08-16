@@ -148,7 +148,8 @@ namespace Microsoft.Xna.Framework.Graphics
 				cloneSource = new Effect (graphicsDevice);
 #if MONOMAC || LINUX
 				uint tag = BitConverter.ToUInt32 (effectCode, 0);
-				if (tag == 0xBCF00BCF || tag == 0xFEFF0901) { //fx magics
+				if (tag == 0xBCF00BCF || tag == 0xFEFF0901
+				    || tag == 0xCF0BF0BC || tag == 0x0109FFFE) { //fx magics
 					cloneSource.ReadFXEffect (effectCode);
 				} else
 #endif

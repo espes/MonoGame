@@ -4,6 +4,9 @@ using System.Linq;
 using System.Diagnostics;
 using System.Collections.Generic;
 
+using MiscUtil.IO;
+using MiscUtil.Conversion;
+
 namespace Microsoft.Xna.Framework.Graphics
 {
 	// This file includes only the stuff needed for parsing from 
@@ -68,18 +71,29 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		private DXEffectObject (byte[] effectCode)
 		{
+			EndianBitConverter bitConverter = EndianBitConverter.Little;
+
 			uint baseOffset = 8;
-			var tag = BitConverter.ToUInt32 (effectCode, 0);
+			var tag = bitConverter.ToUInt32 (effectCode, 0);
 			if (tag == 0xBCF00BCF) {
 				// TODO: What are we skipping here?
-				baseOffset += BitConverter.ToUInt32 (effectCode, 4);
-			} else if (tag != 0xFEFF0901) {
+				baseOffset += bitConverter.ToUInt32 (effectCode, 4);
+			} else if (tag == 0xCF0BF0BC) {
+				//xbox
+				bitConverter = EndianBitConverter.Big;
+				baseOffset += bitConverter.ToUInt32 (effectCode, 4);
+			} else if (tag == 0xFEFF0901) {
+
+			} else if (tag == 0x0109FFFE) {
+				//xbox
+				bitConverter = EndianBitConverter.Big;
+			} else {
 				// The effect format is too old, too new, or 
 				// ascii which we can't compile atm!
 				throw new NotImplementedException ("Unsupported effect file format!");
 			}
 
-			var startoffset = BitConverter.ToUInt32 (effectCode, (int)(baseOffset - 4));
+			var startoffset = bitConverter.ToUInt32 (effectCode, (int)(baseOffset - 4));
 
 			// Initialize the list of unique shaders.
 			Shaders = new List<DXShaderData> ();
@@ -87,7 +101,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			ConstantBuffers = new List<DXConstantBufferData> ();
 
 			using (var stream = new MemoryStream(effectCode, (int)baseOffset, (int)(effectCode.Length-baseOffset)))
-			using (var reader = new BinaryReader(stream)) {
+			using (var reader = new EndianBinaryReader(bitConverter, stream)) {
 				// Move to the start of the effect data.
 				reader.BaseStream.Seek (startoffset, SeekOrigin.Current);
 
@@ -119,7 +133,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 		}
 
-		private static string parse_name (BinaryReader reader, long offset)
+		private static string parse_name (EndianBinaryReader reader, long offset)
 		{
 			var oldPos = reader.BaseStream.Position;
 			reader.BaseStream.Seek (offset, SeekOrigin.Begin);
@@ -133,7 +147,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			return r;
 		}
 		
-		private void parse_data (BinaryReader reader, d3dx_parameter param)
+		private void parse_data (EndianBinaryReader reader, d3dx_parameter param)
 		{
 			switch (param.type) {
 			default:
@@ -171,7 +185,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			return dxShader.SharedIndex;
 		}
 
-		private void parse_resource (BinaryReader reader)
+		private void parse_resource (EndianBinaryReader reader)
 		{
 			d3dx_state state;
 
@@ -266,7 +280,11 @@ namespace Microsoft.Xna.Framework.Graphics
 			
 		}
 		
-		private static void parse_effect_typedef (BinaryReader reader, long offset, d3dx_parameter param, d3dx_parameter parent, uint flags)
+		private static void parse_effect_typedef (EndianBinaryReader reader,
+		                                          long offset,
+		                                          d3dx_parameter param,
+		                                          d3dx_parameter parent,
+		                                          uint flags)
 		{
 			var oldPos = reader.BaseStream.Position;
 			reader.BaseStream.Seek (offset, SeekOrigin.Begin);
@@ -378,7 +396,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			reader.BaseStream.Seek (oldPos, SeekOrigin.Begin);
 		}
 
-		private d3dx_sampler parse_sampler (BinaryReader reader)
+		private d3dx_sampler parse_sampler (EndianBinaryReader reader)
 		{
 			var ret = new d3dx_sampler ();
 
@@ -401,7 +419,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			return ret;
 		}
 		
-		private void parse_value (BinaryReader reader, d3dx_parameter param, byte[] data)
+		private void parse_value (EndianBinaryReader reader, d3dx_parameter param, byte[] data)
 		{
 			if (param.element_count != 0) {
 				param.data = data;
@@ -498,7 +516,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 		}
 
-		private void parse_init_value (BinaryReader reader, long offset, d3dx_parameter param)
+		private void parse_init_value (EndianBinaryReader reader, long offset, d3dx_parameter param)
 		{
 			var oldPos = reader.BaseStream.Position;
 			reader.BaseStream.Seek (offset, SeekOrigin.Begin);
@@ -510,7 +528,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			reader.BaseStream.Seek (oldPos, SeekOrigin.Begin);
 		}
 
-		private d3dx_parameter parse_effect_annotation (BinaryReader reader)
+		private d3dx_parameter parse_effect_annotation (EndianBinaryReader reader)
 		{
 			var ret = new d3dx_parameter ();
 			
@@ -525,7 +543,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			return ret;
 		}
 
-		private d3dx_parameter parse_effect_parameter (BinaryReader reader)
+		private d3dx_parameter parse_effect_parameter (EndianBinaryReader reader)
 		{
 			var ret = new d3dx_parameter ();
 
@@ -546,7 +564,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			return ret;
 		}
 
-		private d3dx_state parse_state (BinaryReader reader)
+		private d3dx_state parse_state (EndianBinaryReader reader)
 		{
 			var ret = new d3dx_state ();
 			ret.parameter = new d3dx_parameter ();
@@ -727,7 +745,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			return ret;
 		}
 
-		private d3dx_pass parse_effect_pass (BinaryReader reader)
+		private d3dx_pass parse_effect_pass (EndianBinaryReader reader)
 		{
 			var ret = new d3dx_pass ();
 
@@ -748,7 +766,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			return ret;
 		}
 
-		private d3dx_technique parse_effect_technique (BinaryReader reader)
+		private d3dx_technique parse_effect_technique (EndianBinaryReader reader)
 		{
 			var ret = new d3dx_technique ();
 
