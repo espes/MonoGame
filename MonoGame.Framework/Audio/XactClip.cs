@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using MiscUtil.IO;
 
 namespace Microsoft.Xna.Framework.Audio
 {
@@ -47,7 +48,7 @@ namespace Microsoft.Xna.Framework.Audio
 		
 		ClipEvent[] events;
 		
-		public XactClip (SoundBank soundBank, BinaryReader clipReader, uint clipOffset)
+		public XactClip (SoundBank soundBank, EndianBinaryReader clipReader, uint clipOffset)
 		{
 			long oldPosition = clipReader.BaseStream.Position;
 			clipReader.BaseStream.Seek (clipOffset, SeekOrigin.Begin);

@@ -28,6 +28,8 @@ SOFTWARE.
 using System;
 using System.IO;
 using System.Collections.Generic;
+using MiscUtil.IO;
+using MiscUtil.Conversion;
 
 namespace Microsoft.Xna.Framework.Audio
 {
@@ -51,14 +53,18 @@ namespace Microsoft.Xna.Framework.Audio
 		//Defer loading because some programs load soundbanks before wavebanks
 		private void Load ()
 		{	
-			FileStream soundbankstream = new FileStream (filename, FileMode.Open);
-			BinaryReader soundbankreader = new BinaryReader (soundbankstream);
+			var soundbankstream = new FileStream (filename, FileMode.Open);
+			var soundbankreader = new EndianBinaryReader (EndianBitConverter.Little, soundbankstream);
             
 			//Parse the SoundBank.
 			//Thanks to Liandril for "xactxtract" for some of the offsets
 			
 			uint magic = soundbankreader.ReadUInt32 ();
-			if (magic != 0x4B424453) { //"SDBK"
+			if (magic == 0x4B424453) { //"SDBK"
+			
+			} else if (magic == 0x5344424B) { //"XDBK" compiled for xbox
+				soundbankreader.BitConverter = EndianBitConverter.Big;
+			} else {
 				throw new Exception ("Bad soundbank format");
 			}
 			
@@ -232,6 +238,8 @@ namespace Microsoft.Xna.Framework.Audio
 			throw new NotImplementedException ();
 		}
 		#endregion
+
+		public bool IsDisposed { get; private set; }
     }
 }
 

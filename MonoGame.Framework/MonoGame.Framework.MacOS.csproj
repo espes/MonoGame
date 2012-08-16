@@ -458,6 +458,23 @@
     <Compile Include="Media\MediaLibrary.cs" />
     <Compile Include="Media\MediaSource.cs" />
     <Compile Include="FrameworkDispatcher.cs" />
+    <Compile Include="Media\VisualizationData.cs" />
+    <Compile Include="GamerServices\LeaderboardReader.cs" />
+    <Compile Include="GamerServices\LeaderboardIdentity.cs" />
+    <Compile Include="GamerServices\LeaderboardKey.cs" />
+    <Compile Include="GamerServices\LeaderboardWriter.cs" />
+    <Compile Include="GamerServices\LeaderboardEntry.cs" />
+    <Compile Include="GamerServices\PropertyDictionary.cs" />
+    <Compile Include="ThreadExtensions.cs" />
+    <Compile Include="GamerServices\GuideExtensions.cs" />
+    <Compile Include="GamerServices\ConsoleRegion.cs" />
+    <Compile Include="TitleLocation.cs" />
+    <Compile Include="MiscUtil\EndianBinaryReader.cs" />
+    <Compile Include="MiscUtil\EndianBinaryWriter.cs" />
+    <Compile Include="MiscUtil\BigEndianBitConverter.cs" />
+    <Compile Include="MiscUtil\EndianBitConverter.cs" />
+    <Compile Include="MiscUtil\Endianness.cs" />
+    <Compile Include="MiscUtil\LittleEndianBitConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="MacOS\" />
@@ -472,6 +489,7 @@
     <Folder Include="MacOS\GamerServices\" />
     <Folder Include="MacOS\Storage\" />
     <Folder Include="Desktop\Audio\" />
+    <Folder Include="MiscUtil\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="MonoGame.Framework.MacOS.dll.config">
@@ -496,4 +514,14 @@
       <Name>Lidgren.Network.MacOS</Name>
     </ProjectReference>
   </ItemGroup>
+  <ProjectExtensions>
+    <MonoDevelop>
+      <Properties>
+        <Policies>
+          <TextStylePolicy TabsToSpaces="False" NoTabsAfterNonTabs="True" inheritsSet="VisualStudio" inheritsScope="text/plain" scope="text/x-csharp" />
+          <CSharpFormattingPolicy inheritsSet="Mono" inheritsScope="text/x-csharp" scope="text/x-csharp" />
+        </Policies>
+      </Properties>
+    </MonoDevelop>
+  </ProjectExtensions>
 </Project>

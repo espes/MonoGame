@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using MiscUtil.IO;
 
 namespace Microsoft.Xna.Framework.Audio
 {
@@ -35,7 +36,7 @@ namespace Microsoft.Xna.Framework.Audio
 		internal float fadeOut;
 
 		
-		internal AudioCategory (AudioEngine audioengine, string name, BinaryReader reader)
+		internal AudioCategory (AudioEngine audioengine, string name, EndianBinaryReader reader)
 		{
 			this.name = name;
 			engine = audioengine;

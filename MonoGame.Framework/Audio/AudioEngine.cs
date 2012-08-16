@@ -42,6 +42,9 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
+using MiscUtil.IO;
+using MiscUtil.Conversion;
+
 namespace Microsoft.Xna.Framework.Audio
 {
 	public class AudioEngine : IDisposable
@@ -108,9 +111,13 @@ namespace Microsoft.Xna.Framework.Audio
 			//Read the xact settings file
 			//Credits to alisci01 for initial format documentation
 			using (var stream = File.OpenRead (settingsFile))
-			using (var reader = new BinaryReader(stream)) {
+			using (var reader = new EndianBinaryReader(EndianBitConverter.Little, stream)) {
 				uint magic = reader.ReadUInt32 ();
-				if (magic != 0x46534758) { //'XGFS'
+				if (magic == 0x46534758) { //'XGFS'
+					
+				} else if (magic == 0x58475346) { //xbox compiled 'XGFS'
+					reader.BitConverter = EndianBitConverter.Big;
+				} else {
 					throw new ArgumentException ("XGS format not recognized");
 				}
 
@@ -204,15 +211,15 @@ namespace Microsoft.Xna.Framework.Audio
 		}
 
 		//wtf C#
-		private static string[] readNullTerminatedStrings (uint count, BinaryReader reader)
+		private static string[] readNullTerminatedStrings (uint count, EndianBinaryReader reader)
 		{
 			string[] ret = new string[count];
 			for (int i=0; i<count; i++) {
 				List<char> s = new List<char> ();
-				while (reader.PeekChar() != 0) {
-					s.Add (reader.ReadChar ()); 
+				char c;
+				while ( (c = reader.ReadChar ()) != 0) {
+					s.Add (c); 
 				}
-				reader.ReadChar ();
 				ret [i] = new string (s.ToArray ());
 			}
 			return ret;

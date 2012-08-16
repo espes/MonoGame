@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using MiscUtil.IO;
 
 namespace Microsoft.Xna.Framework.Audio
 {
@@ -9,7 +10,7 @@ namespace Microsoft.Xna.Framework.Audio
 		XactClip[] soundClips;
 		SoundEffectInstance wave;
 		
-		public XactSound (SoundBank soundBank, BinaryReader soundReader, uint soundOffset)
+		public XactSound (SoundBank soundBank, EndianBinaryReader soundReader, uint soundOffset)
 		{
 			long oldPosition = soundReader.BaseStream.Position;
 			soundReader.BaseStream.Seek (soundOffset, SeekOrigin.Begin);
