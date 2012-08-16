@@ -89,8 +89,7 @@ namespace Microsoft.Xna.Framework.Audio
 			uint numTotalCues = soundbankreader.ReadUInt16 ();
 			uint numWaveBanks = soundbankreader.ReadByte ();
 			uint numSounds = soundbankreader.ReadUInt16 ();
-			uint cueNameTableLen = soundbankreader.ReadUInt16 ();
-			soundbankreader.ReadUInt16 (); //unkn
+			uint cueNameTableLen = soundbankreader.ReadUInt32 ();
 			
 			uint simpleCuesOffset = soundbankreader.ReadUInt32 ();
 			uint complexCuesOffset = soundbankreader.ReadUInt32 (); //unkn
@@ -117,6 +116,8 @@ namespace Microsoft.Xna.Framework.Audio
 			//parse cue name table
 			soundbankstream.Seek (cueNamesOffset, SeekOrigin.Begin);
 			string[] cueNames = System.Text.Encoding.UTF8.GetString(soundbankreader.ReadBytes((int)cueNameTableLen)).Split('\0');
+
+			//simple cues
 			soundbankstream.Seek (simpleCuesOffset, SeekOrigin.Begin);
 			for (int i=0; i<numSimpleCues; i++) {
 				byte flags = soundbankreader.ReadByte ();
@@ -126,7 +127,8 @@ namespace Microsoft.Xna.Framework.Audio
 				
 				cues.Add(cue.Name, cue);
 			}
-			
+
+			//complex cues
 			soundbankstream.Seek (complexCuesOffset, SeekOrigin.Begin);
 			for (int i=0; i<numComplexCues; i++) {
 				Cue cue;
@@ -146,9 +148,11 @@ namespace Microsoft.Xna.Framework.Audio
 					//parse variation table
 					long savepos = soundbankstream.Position;
 					soundbankstream.Seek (variationTableOffset, SeekOrigin.Begin);
-					
-					uint numEntries = soundbankreader.ReadUInt16 ();
-					uint variationflags = soundbankreader.ReadUInt16 ();
+
+					uint variationflags = soundbankreader.ReadUInt32 ();
+					uint numEntries = variationflags & 0xFFFF;
+					variationflags >>= 16;
+
 					soundbankreader.ReadByte ();
 					soundbankreader.ReadUInt16 ();
 					soundbankreader.ReadByte ();
@@ -175,6 +179,16 @@ namespace Microsoft.Xna.Framework.Audio
 							byte weightMin = soundbankreader.ReadByte ();
 							byte weightMax = soundbankreader.ReadByte ();
 							
+							cueSounds[j] = new XactSound(this, soundbankreader, soundOffset);
+							break;
+						}
+						case 3:
+						{
+							uint soundOffset = soundbankreader.ReadUInt32 ();
+							float weightMin = soundbankreader.ReadSingle ();
+							float weightMax = soundbankreader.ReadSingle ();
+							soundbankreader.ReadUInt32 (); //unkn..
+
 							cueSounds[j] = new XactSound(this, soundbankreader, soundOffset);
 							break;
 						}

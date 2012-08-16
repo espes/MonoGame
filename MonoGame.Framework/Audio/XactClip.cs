@@ -10,7 +10,7 @@ namespace Microsoft.Xna.Framework.Audio
 		
 		abstract class ClipEvent {
 			public XactClip clip;
-			
+			public abstract void Read(EndianBinaryReader reader, SoundBank soundBank);
 			public abstract void Play();
 			public abstract void Stop();
 			public abstract void Pause();
@@ -20,6 +20,20 @@ namespace Microsoft.Xna.Framework.Audio
 		
 		class EventPlayWave : ClipEvent {
 			public SoundEffectInstance wave;
+
+			public override void Read(EndianBinaryReader reader, SoundBank soundBank) {
+				reader.ReadUInt32 (); //unkn
+				uint trackIndex = reader.ReadUInt16 ();
+				byte waveBankIndex = reader.ReadByte ();
+				
+				//unkn
+				reader.ReadByte ();
+				reader.ReadUInt16 ();
+				reader.ReadUInt16 ();
+				
+				this.wave = soundBank.GetWave(waveBankIndex, trackIndex);
+			}
+
 			public override void Play() {
 				wave.Volume = clip.Volume;
 				if (wave.State == SoundState.Playing) wave.Stop ();
@@ -45,6 +59,23 @@ namespace Microsoft.Xna.Framework.Audio
 				}
 			}
 		}
+
+		class EventPlayWavePitchVolumeFilterVariation : EventPlayWave {
+			public override void Read (EndianBinaryReader reader, SoundBank soundBank)
+			{
+				base.Read (reader, soundBank);
+
+				reader.ReadInt16 ();
+				reader.ReadInt16 ();
+				reader.ReadByte ();
+				reader.ReadByte ();
+				reader.ReadSingle ();
+				reader.ReadSingle ();
+				reader.ReadSingle ();
+				reader.ReadSingle ();
+				uint flags = reader.ReadUInt16 ();
+			}
+		}
 		
 		ClipEvent[] events;
 		
@@ -62,21 +93,12 @@ namespace Microsoft.Xna.Framework.Audio
 				uint eventId = eventInfo & 0x1F;
 				switch (eventId) {
 				case 1:
-					EventPlayWave evnt = new EventPlayWave();
-					
-					
-					clipReader.ReadUInt32 (); //unkn
-					uint trackIndex = clipReader.ReadUInt16 ();
-					byte waveBankIndex = clipReader.ReadByte ();
-					
-					//unkn
-					clipReader.ReadByte ();
-					clipReader.ReadUInt16 ();
-					clipReader.ReadUInt16 ();
-					
-					evnt.wave = soundBank.GetWave(waveBankIndex, trackIndex);
-					
-					events[i] = evnt;
+					events[i] = new EventPlayWave();
+					events[i].Read(clipReader, soundBank);
+					break;
+				case 4:
+					events[i] = new EventPlayWavePitchVolumeFilterVariation();
+					events[i].Read (clipReader, soundBank);
 					break;
 				default:
 					throw new NotImplementedException();

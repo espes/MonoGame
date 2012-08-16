@@ -33,19 +33,26 @@ namespace Microsoft.Xna.Framework.Audio
 				wave = soundBank.GetWave(waveBankIndex, trackIndex);
 			}
 			
-			if ( (flags & 0x1E) != 0 ) {
+			if ( (flags & 0xE) != 0 ) {
 				uint extraDataLen = soundReader.ReadUInt16 ();
-				//TODO: Parse RPC+DSP stuff
-				
-				soundReader.BaseStream.Seek (extraDataLen, SeekOrigin.Current);
+
+				//TODO: Parse RPC stuff
+			} else if ( (flags & 0x10) != 0) {
+				uint extraDataLen = soundReader.ReadUInt16 ();
+
+				//DSP table...
+				byte num = soundReader.ReadByte ();
+				for (int i=0; i<num; i++) {
+					uint unkn = soundReader.ReadUInt32 ();
+				}
 			}
 			
 			if (complexSound) {
 				soundClips = new XactClip[numClips];
 				for (int i=0; i<numClips; i++) {
-					soundReader.ReadByte (); //unkn
+					byte unkn = soundReader.ReadByte (); //unkn
 					uint clipOffset = soundReader.ReadUInt32 ();
-					soundReader.ReadUInt32 (); //unkn
+					uint unkn2 = soundReader.ReadUInt32 (); //unkn
 					
 					soundClips[i] = new XactClip(soundBank, soundReader, clipOffset);
 				}
