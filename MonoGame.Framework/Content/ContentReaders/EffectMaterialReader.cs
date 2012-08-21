@@ -38,74 +38,39 @@ purpose and non-infringement.
 */
 #endregion License
 
-using System.Drawing;
-using System.Runtime.InteropServices;
+using System;
+using System.Collections.Generic;
 
-using MonoMac.Foundation;
-using MonoMac.AppKit;
+using Microsoft.Xna.Framework.Graphics;
 
-﻿
-namespace Microsoft.Xna.Framework.Input
+namespace Microsoft.Xna.Framework.Content
 {
-	public static class Mouse
+	internal class EffectMaterialReader : ContentTypeReader<EffectMaterial>
 	{
-		internal static int X, Y;
-		internal static float ScrollWheelValue;
-		internal static ButtonState LeftButton = ButtonState.Released;
-		internal static ButtonState RightButton = ButtonState.Released;
-		internal static ButtonState MiddleButton = ButtonState.Released;
-		
-		internal static GameWindow Window;
-		
-		public static MouseState GetState ()
+		protected internal override EffectMaterial Read (ContentReader input, EffectMaterial existingInstance)
 		{
-			MouseState ms = new MouseState(X, Y);
-			ms.LeftButton = LeftButton;
-			ms.RightButton = RightButton;
-			ms.MiddleButton = MiddleButton;
-			ms.ScrollWheelValue = (int)ScrollWheelValue;
-			
-			return ms;
-		}
+			var effect = input.ReadExternalReference<Effect> ();
+			var effectMaterial = new EffectMaterial (effect);
 
-		public static void SetPosition (int x, int y)
-		{
-			X = x;
-			Y = y;
-			
-			var mousePt = NSEvent.CurrentMouseLocation;
-			NSScreen currentScreen = null;
-			foreach (var screen in NSScreen.Screens) {
-				if (screen.Frame.Contains(mousePt)) {
-					currentScreen = screen;
-					break;
+			var dict = input.ReadObject<Dictionary<string, object>> ();
+
+			foreach (KeyValuePair<string, object> item in dict) {
+				var parameter = effectMaterial.Parameters [item.Key];
+				if (parameter != null) {
+					if (typeof(Texture).IsAssignableFrom (item.Value.GetType ())) {
+						parameter.SetValue ((Texture)item.Value);
+					} else {
+						throw new NotImplementedException ();
+					}
+				} else {
+#if DEBUG
+					Console.WriteLine ("No parameter " + item.Key);
+#endif
 				}
 			}
-			
-			var point = new PointF(x, Window.ClientBounds.Height-y);
-			var windowPt = Window.ConvertPointToView(point, null);
-			var screenPt = Window.Window.ConvertBaseToScreen(windowPt);
-			var flippedPt = new PointF(screenPt.X, currentScreen.Frame.Size.Height-screenPt.Y);
-			flippedPt.Y += currentScreen.Frame.Location.Y;
-			
-			
-			CGSetLocalEventsSuppressionInterval(0.0);
-			CGWarpMouseCursorPosition(flippedPt);
-			CGSetLocalEventsSuppressionInterval(0.25);
-		}
 
-		internal static void ResetMouse () {
-			LeftButton = ButtonState.Released;
-			RightButton = ButtonState.Released;
-			MiddleButton = ButtonState.Released;
-		}
-		
-		[DllImport (MonoMac.Constants.CoreGraphicsLibrary)]
-		extern static void CGWarpMouseCursorPosition(PointF newCursorPosition);
-		
-		[DllImport (MonoMac.Constants.CoreGraphicsLibrary)]
-		extern static void CGSetLocalEventsSuppressionInterval(double seconds);
 
+			return effectMaterial;
+		}
 	}
 }
-
